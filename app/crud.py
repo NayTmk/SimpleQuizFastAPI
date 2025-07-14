@@ -1,7 +1,7 @@
 import uuid
 from app.core.security import get_hashed_password, verify_password
 from sqlmodel import select
-from api.deps import SessionDep
+from app.api.deps import SessionDep
 from app.models import (
     User, UserCreate, UserUpdatePassword,
     QuizCreate, Quiz,

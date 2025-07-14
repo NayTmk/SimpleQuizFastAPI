@@ -19,10 +19,6 @@ class UserRegister(SQLModel):
     password: str = Field(min_length=6)
 
 
-class UserUpdateEmail(SQLModel):
-    pass
-
-
 class UserUpdatePassword(SQLModel):
     current_password: str = Field(min_length=8, max_length=64)
     new_password: str = Field(min_length=8, max_length=64)
@@ -34,6 +30,10 @@ class User(UserBase, table=True):
     quizzes: list['Quiz'] = Relationship(
         back_populates='owner', cascade_delete=True
     )
+
+
+class UserPublic(UserBase):
+    id: uuid.UUID
 
 
 class QuizBase(SQLModel):
