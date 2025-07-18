@@ -44,7 +44,13 @@ class QuizBase(SQLModel):
 
 
 class QuizCreate(QuizBase):
-    pass
+    owner_id: uuid.UUID
+    questions: list['QuestionCreate']
+
+
+class QuizRead(QuizBase):
+    owner_id: uuid.UUID
+    questions: list['QuestionRead']
 
 
 class QuizUpdate(QuizBase):
@@ -65,8 +71,11 @@ class QuestionBase(SQLModel):
 
 
 class QuestionCreate(QuestionBase):
-    pass
+    answers: list['AnswerCreate']
 
+class QuestionRead(QuestionBase):
+    id: uuid.UUID
+    answers: list['AnswerRead']
 
 class QuestionUpdate(QuestionBase):
     question: str | None = Field(
@@ -89,6 +98,8 @@ class AnswerBase(SQLModel):
 class AnswerCreate(AnswerBase):
     pass
 
+class AnswerRead(AnswerBase):
+    id: uuid.UUID
 
 class AnswerUpdate(AnswerBase):
     text: str | None = Field(default=None, min_length=4, max_length=2048)
@@ -107,3 +118,7 @@ class Token(SQLModel):
 
 class TokenPayload(SQLModel):
     sub: str | None = None
+
+
+class Message(SQLModel):
+    message: str

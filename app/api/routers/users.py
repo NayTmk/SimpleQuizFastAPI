@@ -1,4 +1,5 @@
 import uuid
+from pyexpat.errors import messages
 
 from fastapi import APIRouter, HTTPException
 
@@ -10,7 +11,8 @@ from app.models import (
     UserCreate,
     UserUpdatePassword,
     UserPublic,
-    User
+    User,
+    Message
 )
 
 
@@ -39,10 +41,13 @@ async def update_password(
 ):
     db_user = await session.get(User, user_id)
     if db_user is None:
-        raise HTTPException(status_code=400, detail='User not found')
+        raise HTTPException(
+            status_code=400, detail='User not found'
+        )
     if db_user.id != current_user.id:
         raise HTTPException(
-            status_code=403, detail='The user doesn\'t have enough privileges'
+            status_code=403,
+            detail='The user doesn\'t have enough privileges'
         )
     if verify_password(
             user_update_password.current_password,
@@ -57,3 +62,46 @@ async def update_password(
             status_code=400, detail='Incorrect password'
         )
     return db_user
+
+@router.get('/me', response_model=UserPublic)
+async def read_current_user(current_user: CurrentUser):
+    return current_user
+
+@router.get('/{user_id}', response_model=UserPublic)
+async def get_user_by_id(
+        session: SessionDep, user_id: uuid.UUID,
+        current_user: CurrentUser
+):
+    db_user = await session.get(User, user_id)
+    if not db_user:
+        return HTTPException(
+            status_code=400, detail='User not found'
+        )
+    if db_user.id != current_user.id and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=403,
+            detail='The user doesn\'t have enough privileges'
+        )
+    return db_user
+
+@router.delete('/{user_id}', response_model=Message)
+async def delete_user(
+        session: SessionDep, user_id: uuid.UUID,
+        current_user: CurrentUser
+):
+    db_user = await session.get(User, user_id)
+    if not db_user:
+        raise HTTPException(
+            status_code=400, detail='User not found'
+        )
+    if not current_user.is_superuser and current_user.id != db_user.id:
+        raise HTTPException(
+            status_code=400, detail='The user doesn\'t have enough privileges'
+        )
+    if db_user.is_superuser:
+        raise HTTPException(
+            status_code=403, detail='Superuser cannot be deleted'
+        )
+    session.delete(db_user)
+    await session.commit()
+    return Message(message='User deleted successfully')

@@ -1,6 +1,7 @@
 import uuid
 from app.core.security import get_hashed_password, verify_password
 from sqlmodel import select
+from sqlalchemy.orm import selectinload
 from app.api.deps import SessionDep
 from app.models import (
     User, UserCreate, UserUpdatePassword,
@@ -52,7 +53,7 @@ async def authenticate(
         return None
     return db_user
 
-async def quiz_create(
+async def clean_quiz_create(
         *, session: SessionDep,
         quiz: QuizCreate, owner_id: uuid.UUID
 ) -> Quiz:
@@ -61,6 +62,34 @@ async def quiz_create(
     await session.commit()
     await session.refresh(db_obj)
     return db_obj
+
+async def create_quiz_with_question(
+        *, session: SessionDep, quiz: QuizCreate, owner_id: uuid.UUID
+):
+    questions = []
+    for question in quiz.questions:
+        answers = [
+            Answer(
+                text=answer.text, is_correct=answer.is_correct
+            ) for answer in question.answers
+        ]
+        questions.append(Question(question=question.question, answers=answers))
+    db_quiz = Quiz(
+        title=quiz.title, description=quiz.description,
+        owner_id=owner_id, questions=questions
+    )
+    session.add(db_quiz)
+    await session.commit()
+    await session.refresh(db_quiz)
+    quiz_id = db_quiz.id
+    result = await session.exec(
+        select(Quiz).where(Quiz.id==quiz_id)
+        .options(
+            selectinload(Quiz.questions).selectinload(Question.answers)
+        )
+    )
+    quiz_with_question = result.one()
+    return quiz_with_question
 
 async def question_create(
         *, session: SessionDep, question: QuestionCreate,
