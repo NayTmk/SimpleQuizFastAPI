@@ -114,3 +114,15 @@ async def answer_create(
     await session.commit()
     await session.refresh(db_obj)
     return db_obj
+
+async def get_user_quizzes(
+        *, session: SessionDep, user_id: uuid.UUID
+) -> list[Quiz]:
+    stmt = select(Quiz).where(
+        Quiz.owner_id == user_id).options(
+        selectinload(Quiz.questions).selectinload(Question.answers)
+    )
+    quizzes = await session.scalars(stmt)
+    return quizzes
+
+

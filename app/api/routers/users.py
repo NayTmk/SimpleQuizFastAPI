@@ -102,6 +102,6 @@ async def delete_user(
         raise HTTPException(
             status_code=403, detail='Superuser cannot be deleted'
         )
-    session.delete(db_user)
+    await session.delete(db_user)
     await session.commit()
     return Message(message='User deleted successfully')

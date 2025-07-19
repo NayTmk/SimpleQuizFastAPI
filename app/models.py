@@ -28,7 +28,8 @@ class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
     quizzes: list['Quiz'] = Relationship(
-        back_populates='owner', cascade_delete=True
+        back_populates='owner',
+        sa_relationship_kwargs={'cascade': 'all, delete-orphan'}
     )
 
 
@@ -50,6 +51,7 @@ class QuizCreate(QuizBase):
 
 class QuizRead(QuizBase):
     owner_id: uuid.UUID
+    id: uuid.UUID
     questions: list['QuestionRead']
 
 
@@ -62,7 +64,8 @@ class Quiz(QuizBase, table=True):
     owner_id: uuid.UUID = Field(foreign_key='user.id', ondelete='CASCADE')
     owner: 'User' = Relationship(back_populates='quizzes')
     questions: list['Question'] = Relationship(
-        back_populates='quiz', cascade_delete=True
+        back_populates='quiz',
+        sa_relationship_kwargs={'cascade': 'all, delete-orphan'}
     )
 
 
@@ -87,7 +90,9 @@ class Question(QuestionBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     quiz_id: uuid.UUID = Field(foreign_key='quiz.id', ondelete='CASCADE')
     quiz: 'Quiz' = Relationship(back_populates='questions')
-    answers: list['Answer'] = Relationship(back_populates='question')
+    answers: list['Answer'] = Relationship(
+        back_populates='question', sa_relationship_kwargs={'cascade': 'all, delete-orphan'}
+    )
 
 
 class AnswerBase(SQLModel):
