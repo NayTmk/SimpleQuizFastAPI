@@ -5,7 +5,7 @@ from sqlalchemy.orm import selectinload
 from app.api.deps import SessionDep
 from app.models import (
     User, UserCreate, UserUpdatePassword,
-    QuizCreate, Quiz,
+    QuizCreate, Quiz, QuizUpdate,
     QuestionCreate, Question,
     AnswerCreate, Answer
 )
@@ -91,6 +91,37 @@ async def create_quiz_with_question(
     quiz_with_question = result.one()
     return quiz_with_question
 
+async def get_user_quizzes(
+        *, session: SessionDep, user_id: uuid.UUID
+) -> list[Quiz]:
+    stmt = select(Quiz).where(
+        Quiz.owner_id == user_id).options(
+        selectinload(Quiz.questions).selectinload(Question.answers)
+    )
+    quizzes = await session.scalars(stmt)
+    return quizzes
+
+async def get_quiz_by_id(
+        *, session: SessionDep, quiz_id: uuid.UUID
+) -> Quiz:
+    stmt = select(Quiz).where(Quiz.id==quiz_id).options(
+        selectinload(Quiz.questions).selectinload(Question.answers)
+    )
+    result = await session.exec(stmt)
+    quiz = result.one()
+    return quiz
+
+async def update_quiz(
+        *, session: SessionDep, db_quiz: Quiz,
+        update_data: QuizUpdate
+):
+    quiz_data = update_data.model_dump(exclude_unset=True)
+    db_quiz.sqlmodel_update(quiz_data)
+    session.add(db_quiz)
+    await session.commit()
+    await session.refresh(db_quiz)
+    return db_quiz
+
 async def question_create(
         *, session: SessionDep, question: QuestionCreate,
         quiz_id: uuid.UUID
@@ -114,15 +145,3 @@ async def answer_create(
     await session.commit()
     await session.refresh(db_obj)
     return db_obj
-
-async def get_user_quizzes(
-        *, session: SessionDep, user_id: uuid.UUID
-) -> list[Quiz]:
-    stmt = select(Quiz).where(
-        Quiz.owner_id == user_id).options(
-        selectinload(Quiz.questions).selectinload(Question.answers)
-    )
-    quizzes = await session.scalars(stmt)
-    return quizzes
-
-
