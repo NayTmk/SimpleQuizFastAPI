@@ -54,6 +54,9 @@ class QuizRead(QuizBase):
     id: uuid.UUID
     questions: list['QuestionRead']
 
+class QuizQuestions(SQLModel):
+    questions: list['QuestionRead']
+
 
 class QuizUpdate(QuizBase):
     title: str | None = Field(default=None, min_length=6, max_length=64)
@@ -74,7 +77,8 @@ class QuestionBase(SQLModel):
 
 
 class QuestionCreate(QuestionBase):
-    answers: list['AnswerCreate']
+    quiz_id: uuid.UUID
+    answers: list['AnswerCreate'] | None = None
 
 class QuestionRead(QuestionBase):
     id: uuid.UUID
@@ -101,7 +105,7 @@ class AnswerBase(SQLModel):
 
 
 class AnswerCreate(AnswerBase):
-    pass
+        question_id: uuid.UUID | None = None
 
 class AnswerRead(AnswerBase):
     id: uuid.UUID
