@@ -90,6 +90,10 @@ class QuestionUpdate(QuestionBase):
     )
 
 
+class QuestionAnswers(SQLModel):
+    answers: list['AnswerRead']
+
+
 class Question(QuestionBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     quiz_id: uuid.UUID = Field(foreign_key='quiz.id', ondelete='CASCADE')

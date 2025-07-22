@@ -1,14 +1,16 @@
 import uuid
 
+import sqlmodel
+
 from app.core.security import get_hashed_password, verify_password
 from sqlmodel import select
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 from app.api.deps import SessionDep
 from app.models import (
     User, UserCreate, UserUpdatePassword,
     QuizCreate, Quiz, QuizUpdate, QuestionUpdate,
     QuestionCreate, Question,
-    AnswerCreate, Answer
+    AnswerCreate, Answer, AnswerUpdate
 )
 
 
@@ -66,7 +68,7 @@ async def clean_quiz_create(
 
 async def create_quiz_with_question(
         *, session: SessionDep, quiz: QuizCreate, owner_id: uuid.UUID
-):
+) -> Quiz:
     questions = []
     for question in quiz.questions:
         answers = [
@@ -115,7 +117,7 @@ async def get_quiz_by_id(
 async def update_quiz(
         *, session: SessionDep, db_quiz: Quiz,
         update_data: QuizUpdate
-):
+) -> Quiz:
     quiz_data = update_data.model_dump(exclude_unset=True)
     db_quiz.sqlmodel_update(quiz_data)
     session.add(db_quiz)
@@ -147,7 +149,7 @@ async def question_create(
 
 async def get_question_by_id(
         *, session: SessionDep, question_id: uuid.UUID
-) -> Question:
+) -> Question | None:
     stmt = (
         select(Question)
         .where(Question.id == question_id)
@@ -160,25 +162,52 @@ async def get_question_by_id(
     question = result.one_or_none()
     return question
 
-async def answer_create(
-        *, session: SessionDep, answer: AnswerCreate,
-        question_id: uuid.UUID
-) -> Answer:
-    db_obj = Answer.model_validate(
-        answer, update={'question_id': question_id}
-    )
-    session.add(db_obj)
-    await session.commit()
-    await session.refresh(db_obj)
-    return db_obj
-
 async def update_question(
         *, session: SessionDep, db_question: Question,
         update_data: QuestionUpdate
-):
+) -> Question:
     question_data = update_data.model_dump(exclude_unset=True)
     db_question.sqlmodel_update(question_data)
     session.add(db_question)
     await session.commit()
     await session.refresh(db_question)
     return db_question
+
+async def get_answer_by_id(
+        *, session: SessionDep, answer_id: uuid.UUID
+) -> Answer | None:
+    stmt = (
+        select(Answer)
+        .where(Answer.id == answer_id)
+        .options(
+            joinedload(Answer.question)
+            .joinedload(Question.quiz)
+        )
+    )
+    result = await session.exec(stmt)
+    answer = result.one_or_none()
+    return answer
+
+async def update_answer(
+        *, session: SessionDep, db_answer: Answer,
+        update_data: AnswerUpdate
+) -> Answer:
+    answer_data = update_data.model_dump(exclude_unset=True)
+    db_answer.sqlmodel_update(answer_data)
+    session.add(db_answer)
+    await session.commit()
+    await session.refresh(db_answer)
+    return db_answer
+
+async def create_answer(
+        *, session: SessionDep, answer_in: AnswerCreate,
+) -> Answer:
+    answer = Answer(
+        text=answer_in.text,
+        is_correct=answer_in.is_correct,
+        question_id=answer_in.question_id
+    )
+    session.add(answer)
+    await session.commit()
+    await session.refresh(answer)
+    return answer
