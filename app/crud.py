@@ -1,7 +1,4 @@
 import uuid
-
-import sqlmodel
-
 from app.core.security import get_hashed_password, verify_password
 from sqlmodel import select
 from sqlalchemy.orm import selectinload, joinedload
@@ -111,7 +108,7 @@ async def get_quiz_by_id(
         selectinload(Quiz.questions).selectinload(Question.answers)
     )
     result = await session.exec(stmt)
-    quiz = result.one()
+    quiz = result.one_or_none()
     return quiz
 
 async def update_quiz(

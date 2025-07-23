@@ -1,3 +1,4 @@
+import uuid
 import jwt
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
@@ -6,7 +7,7 @@ from app.core.config import settings
 
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
-def create_access_token(user_id: str, expires_delta: timedelta):
+def create_access_token(user_id: uuid.UUID, expires_delta: timedelta):
     to_encode = {'sub': user_id}
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta

@@ -1,8 +1,5 @@
 import uuid
-from pyexpat.errors import messages
-
 from fastapi import APIRouter, HTTPException
-
 from app import crud
 from app.api.deps import SessionDep, CurrentUser
 from app.core.security import verify_password
@@ -25,7 +22,7 @@ async def register_user(session: SessionDep, user_in: UserRegister):
     )
     if user:
         raise HTTPException(
-            status_code=400,
+            status_code=404,
             detail='The user with this username already exists'
         )
     user_create = UserCreate.model_validate(user_in)
@@ -34,7 +31,7 @@ async def register_user(session: SessionDep, user_in: UserRegister):
     )
     return user
 
-@router.patch('/update-password/{user_id}', response_model=UserPublic)
+@router.patch('/users/{user_id}/password', response_model=UserPublic)
 async def update_password(
         session: SessionDep, user_id: uuid.UUID,
         current_user: CurrentUser, user_update_password: UserUpdatePassword
@@ -42,7 +39,7 @@ async def update_password(
     db_user = await session.get(User, user_id)
     if db_user is None:
         raise HTTPException(
-            status_code=400, detail='User not found'
+            status_code=404, detail='User not found'
         )
     if db_user.id != current_user.id:
         raise HTTPException(
@@ -74,8 +71,8 @@ async def get_user_by_id(
 ):
     db_user = await session.get(User, user_id)
     if not db_user:
-        return HTTPException(
-            status_code=400, detail='User not found'
+        raise HTTPException(
+            status_code=404, detail='User not found'
         )
     if db_user.id != current_user.id and not current_user.is_superuser:
         raise HTTPException(
@@ -92,11 +89,11 @@ async def delete_user(
     db_user = await session.get(User, user_id)
     if not db_user:
         raise HTTPException(
-            status_code=400, detail='User not found'
+            status_code=404, detail='User not found'
         )
-    if not current_user.is_superuser and current_user.id != db_user.id:
+    if current_user.id != db_user.id and not current_user.is_superuser:
         raise HTTPException(
-            status_code=400, detail='The user doesn\'t have enough privileges'
+            status_code=403, detail='The user doesn\'t have enough privileges'
         )
     if db_user.is_superuser:
         raise HTTPException(

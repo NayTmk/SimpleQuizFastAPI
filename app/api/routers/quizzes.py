@@ -25,7 +25,7 @@ async def delete_quiz(
         )
     if not current_user.is_superuser and current_user.id != db_quiz.owner_id:
         raise HTTPException(
-            status_code=400,
+            status_code=404,
             detail='The user doesn\'t have enough privileges'
         )
     await session.delete(db_quiz)

@@ -7,7 +7,6 @@ from typing import Annotated, AsyncGenerator
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
 from sqlmodel.ext.asyncio.session import AsyncSession
-
 from app.core.config import settings
 from app.core.db import engine
 from app.models import User, TokenPayload

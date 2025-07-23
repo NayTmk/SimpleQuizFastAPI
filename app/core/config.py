@@ -1,3 +1,4 @@
+from pydantic import EmailStr
 from pydantic_settings import BaseSettings
 import sqlmodel
 
@@ -17,6 +18,9 @@ class Settings(BaseSettings):
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
 
+    FIRST_USER: str
+    FIRST_USER_EMAIL: EmailStr
+    FIRST_USER_PASSWORD: str
     class Config:
         env_file = '.env'
 
